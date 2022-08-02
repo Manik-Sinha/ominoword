@@ -45,30 +45,64 @@ let dictionary = {
   },
 };
 
-function printGrid(grid) {
+function printGrid(grid, rows, cols) {
   console.log('printing grid')
-  let rows = grid.length;
   let printString = '';
   for (let r = 0; r < rows; r++) {
-    let cols = grid[r].length;
     for (let c = 0; c < cols; c++) {
-      printString += grid[r][c] + ' ';
+      printString += grid[r * cols + c] + ' ';
     }
     printString += '\n';
   }
   console.log(printString);
 }
 
+//TODO Test if shuffleArray() is correctly implemented.
+function shuffleArray(array) {
+  for (let i = array.length; i > 1; i--) {
+    //get random index from 0 to i-1, inclusive.
+    let randomIndex = Math.floor(Math.random() * i);
+    let lastIndex = i - 1;
+    let temp = array[lastIndex];
+    array[lastIndex] = array[randomIndex];
+    array[randomIndex] = temp;
+  }
+}
+
 function generateGrid(rows, cols) {
+  // the grid is a 2D array stored in 1D array.
+  //    0 1 2
+  // 0: 0 1 2
+  // 1: 3 4 5
+  // 2: 6 7 8
+  // index = row * cols + col
+  // col = index % cols
+  // row = floor(index / cols)
+  // alternatively, row = (index - col) / cols
 
   //Make an empty grid.
-  let grid = new Array(rows);
-  for (let i = 0; i < rows; i++) {
-    grid[i] = new Array(cols);
-    for (let j = 0; j < cols; j++) {
-      grid[i][j] = 0;
+  let grid = new Array(rows * cols);
+  let i = 0;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      grid[r * cols + c] = 0;
     }
   }
+
+  //Make a temporarily list of all indices.
+  let tempList = new Array(rows * cols);
+  for (let i = 0; i < tempList.length; i++) {
+    tempList[i] = i;
+  }
+
+  //Order them randomly.
+  shuffleArray(tempList);
+
+  //Let's store it in a set. Sets are ordered based on insertion order.
+  //When we visit a point on the grid, we can remove it from this set.
+  //When we need to pick a new random empty point, we can grab the first element of the set.
+  //Since we randomized it to begin with it will be a random point.
+  const unvisited = new Set(tempList);
 
   //We store the sizes of each polyomino in this array.
   //Values in the grid that are 0 represent empty spots on the grid.
@@ -85,14 +119,20 @@ function generateGrid(rows, cols) {
 
     let currentID = polyominoSizes.length;
 
-    //Store the coordinates of all empty neighbors of a polyomino. This will change as
-    //add blocks to polyominos. It can be an array of objects where the key is the row,
-    //and the value is the column. This way we can store pairs of coordinates in an array.
-    let neighbors = [];
+    //Store the coordinates of all empty neighbors of a polyomino.
+    let neighbors = new Set();
 
     //TODO
-    //Pick a random spot in the grid
-    //Check if it is 0, if yes, then we can start, otherwise, we need a new random spot.
+    //Pick a random unvisted spot in the grid.
+    let startIndex
+    if (unvisited.size == 0) {
+      //done = true;
+      break;
+    }
+    else {
+      startIndex = unvisited.values().next().value;
+      unvisited.delete(startIndex);
+    }
 
     //TODO
     //Fill the selected spot with the current id, increment actual size.
@@ -129,7 +169,7 @@ function draw(ctx, grid) {
 //Main
 function main() {
   let grid = generateGrid(5, 5);
-  printGrid(grid);
+  printGrid(grid, 5, 5);
 
   //Get the canvas.
   const canvas = document.getElementById('canvas');
