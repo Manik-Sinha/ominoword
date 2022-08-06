@@ -111,54 +111,150 @@ function generateGrid(rows, cols) {
   let polyominoSizes = [0];
   
   //Generate polyominoes inside grid
-  let done = true;
-  do {
+  while (unvisited.size > 0) {
     //random number from 3 to 5 as an example.
-    let size = Math.floor(Math.random() * 5) + 3;
+    let size = Math.floor(Math.random() * 3) + 3;
+    //let size = Math.floor(Math.random() * (rows * cols) + 1);
     let actualSize = 0;
 
+    //As we update the polyominoSizes at the end of this loop,
+    //we will be updating the length as well, so it increments each iteration.
     let currentID = polyominoSizes.length;
 
-    //Store the coordinates of all empty neighbors of a polyomino.
-    let neighbors = new Set();
+    //Store the coordinates of neighbors.
+    //Each time a new neighbor is selected, it is removed from the array.
+    //Each time we select a new piece of the polyomino, we find
+    //any new neighbors and add them into the array.
+    let neighbors = new Array();
+    //We use neighborsSet to avoid storing the same value twice in neighbors.
+    //This is important to avoid giving a neighbor more chance to be selected.
+    let neighborsSet = new Set();
 
-    //TODO
     //Pick a random unvisted spot in the grid.
     let startIndex
     if (unvisited.size == 0) {
-      //done = true;
+      console.log("This shouldn't happen");
       break;
     }
     else {
+      //Grab a random index from unvisited.
       startIndex = unvisited.values().next().value;
+      //Remote the index from unvisited because we are visiting it now.
       unvisited.delete(startIndex);
     }
 
     //TODO
     //Fill the selected spot with the current id, increment actual size.
+    grid[startIndex] = currentID;
+    actualSize += 1;
+
     //Check up, down, left, right of this spot, and for all neighbors that have value 0,
     //we can add them into the neighbors array.
-    //Select a random neighbor.
-    //Fill that spot with the current id, increment actual size. Remove it from neighbors.
-    //Check up, down, left, right of this spot, and for all neighbors that have value 0,
-    //we can add them into the neighbors array. One of the spots will for sure have this
-    //polyominoes id, so maybe ignore checking that spot.
-    //Repeat this process until actual size == polyominoSize or there are no more pairs
-    //in the neighbors array.
+    // 3 x 3 Grid
+    // cols = 3
+    // 0: 0 1 2
+    // 1: 3 4 5
+    // 2: 6 7 8
+    // 3 x 4 Grid
+    // cols = 4
+    // 0: 0 1 2  3
+    // 1: 4 5 6  7
+    // 2: 8 9 10 11
+    let currentIndex = startIndex;
+    do {
+      console.log('selecting: ' + currentIndex);
+      // To find coordinate of up: find current index - columns. If value < 0, there is no up.
+      let up = currentIndex - cols;
+      if (up >= 0 && grid[up] == 0) {
+        if (!neighborsSet.has(up)) {
+          neighborsSet.add(up);
+          neighbors.push(up);
+        }
+        else {
+          console.log('*************** found and ignoring duplicate value ' + up);
+        }
+      }
+
+      //To find coordinate of down: find current index + columns. If value >= grid.length, there is no down.
+      let down = currentIndex + cols;
+      if (down < grid.length && grid[down] == 0) {
+        if (!neighborsSet.has(down)) {
+          neighborsSet.add(down);
+          neighbors.push(down);
+        }
+        else {
+          console.log('*************** found and ignoring duplicate value ' + down);
+        }
+      }
+
+      //To find coordinate of left: find current index - 1. If we are in the first column, there is no left.
+      let left = currentIndex - 1;
+      let currentCol = currentIndex % cols;
+      if (currentCol > 0 && grid[left] == 0) {
+        if (!neighborsSet.has(left)) {
+          neighborsSet.add(left);
+          neighbors.push(left);
+        }
+        else {
+          console.log('*************** found and ignoring duplicate value ' + left);
+        }
+      }
+      //To find coordinate of right: find current index + 1. If we are in last column, there is no right.
+      let right = currentIndex + 1;
+      if (currentCol < (cols - 1) && grid[right] == 0) {
+        if (!neighborsSet.has(right)) {
+          neighborsSet.add(right);
+          neighbors.push(right);
+        }
+        else {
+          console.log('*************** found and ignoring duplicate value ' + right);
+        }
+      }
+
+      console.log(neighbors);
+
+      //Select a random neighbor.
+      let randomNeighborIndex = Math.floor(Math.random() * neighbors.length);
+      let randomNeighbor = neighbors[randomNeighborIndex];
+
+      //Fill that spot with the current id, increment actual size. Remove it from neighbors.
+      //We also need to remove it from unvisited.
+      unvisited.delete(randomNeighbor);
+      grid[randomNeighbor] = currentID;
+      actualSize += 1;
+      //Store the last element in neighbors array where the random neighbor is.
+      neighbors[randomNeighborIndex] = neighbors.at(-1);
+      //Reduce size of neighbors by deleting the redunant last element.
+      //This is how we can 'delete' the random neighbor we already selected.
+      neighbors.pop();
+
+      //Check up, down, left, right of this spot, and for all neighbors that have value 0,
+      //we can add them into the neighbors array. One of the spots will for sure have this
+      //polyominoes id, so maybe ignore checking that spot.
+      //Repeat this process until actual size == polyominoSize or there are no more pairs
+      //in the neighbors array.
+      currentIndex = randomNeighbor;
+
+    } while(actualSize != size && neighbors.length != 0);
 
     //Update polyominoSizes with the correct size of this polyomino.
     polyominoSizes.push(actualSize);
 
-    //TODO
     //Repeat until every spot in grid is filled with polyomino.
     //The grid will have no entry with 0 left at this point.
-  } while (!done);
+  }
 
   //record size of each polyomino and select random words from dictionary
 
   //place each letter of word randomly in each polyomino
 
   return grid;
+}
+
+//TODO
+//This function to test if grid is filled and only filled with polyominoes.
+function testGrid(grid) {
+  return true;
 }
 
 //Drawing
@@ -170,6 +266,7 @@ function draw(ctx, grid) {
 function main() {
   let grid = generateGrid(5, 5);
   printGrid(grid, 5, 5);
+  testGrid(grid);
 
   //Get the canvas.
   const canvas = document.getElementById('canvas');
